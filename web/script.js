@@ -26,60 +26,65 @@ function getMarkerLatLng(markerObj) {
     return markerObj.marker.getLatLng();
 }
 
-function buildAdjacencyAndConnectedPairs() {
-    const n = markers.length;
-    const adjacency = Array.from({ length: n }, function () {
-        return [];
-    });
+function getMarkersWithinRadius(seedIndex, candidateIndices) {
+    const seedLatLng = getMarkerLatLng(markers[seedIndex]);
+    const nearbyIndices = [];
 
-    for (let i = 0; i < n - 1; i++) {
-        const p1 = getMarkerLatLng(markers[i]);
+    for (let i = 0; i < candidateIndices.length; i++) {
+        const markerIndex = candidateIndices[i];
+        const markerLatLng = getMarkerLatLng(markers[markerIndex]);
+        const distance = map.distance(seedLatLng, markerLatLng);
 
-        for (let j = i + 1; j < n; j++) {
-            const p2 = getMarkerLatLng(markers[j]);
-            const distance = map.distance(p1, p2);
-
-            if (distance <= DISTANCE_THRESHOLD_METERS) {
-                adjacency[i].push(j);
-                adjacency[j].push(i);
-            }
+        if (distance <= DISTANCE_THRESHOLD_METERS) {
+            nearbyIndices.push(markerIndex);
         }
     }
 
-    return {
-        adjacency: adjacency
-    };
+    return nearbyIndices;
 }
 
-function findConnectedComponents(adjacency) {
-    const n = adjacency.length;
-    const visited = new Array(n).fill(false);
+function buildNonOverlappingRadiusGroups() {
+    const unassignedIndices = markers.map(function (_, index) {
+        return index;
+    });
     const groups = [];
 
-    for (let start = 0; start < n; start++) {
-        if (visited[start]) {
-            continue;
-        }
+    while (unassignedIndices.length > 0) {
+        let bestSeedIndex = unassignedIndices[0];
+        let bestGroupIndices = [];
 
-        const stack = [start];
-        visited[start] = true;
-        const component = [];
+        for (let i = 0; i < unassignedIndices.length; i++) {
+            const seedIndex = unassignedIndices[i];
+            const groupIndices = getMarkersWithinRadius(seedIndex, unassignedIndices);
 
-        while (stack.length > 0) {
-            const node = stack.pop();
-            component.push(node);
-
-            const neighbors = adjacency[node];
-            for (let k = 0; k < neighbors.length; k++) {
-                const next = neighbors[k];
-                if (!visited[next]) {
-                    visited[next] = true;
-                    stack.push(next);
-                }
+            if (
+                groupIndices.length > bestGroupIndices.length ||
+                (
+                    groupIndices.length === bestGroupIndices.length &&
+                    seedIndex < bestSeedIndex
+                )
+            ) {
+                bestSeedIndex = seedIndex;
+                bestGroupIndices = groupIndices;
             }
         }
 
-        groups.push(component);
+        if (bestGroupIndices.length === 0) {
+            bestGroupIndices = [bestSeedIndex];
+        }
+
+        groups.push(bestGroupIndices);
+
+        const remainingIndices = [];
+        for (let i = 0; i < unassignedIndices.length; i++) {
+            const markerIndex = unassignedIndices[i];
+            if (bestGroupIndices.indexOf(markerIndex) === -1) {
+                remainingIndices.push(markerIndex);
+            }
+        }
+
+        unassignedIndices.length = 0;
+        Array.prototype.push.apply(unassignedIndices, remainingIndices);
     }
 
     return groups;
@@ -176,8 +181,7 @@ function recomputeGroupsAndRender() {
         return;
     }
 
-    const graphResult = buildAdjacencyAndConnectedPairs();
-    const groups = findConnectedComponents(graphResult.adjacency);
+    const groups = buildNonOverlappingRadiusGroups();
 
     drawGroupPolygons(groups);
     renderGroupSummary(groups);
