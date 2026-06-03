@@ -12,14 +12,14 @@ const DISTANCE_THRESHOLD_METERS = 100;
 const markers = [];
 let markerCount = 0;
 
-const groupCirclesLayer = L.layerGroup().addTo(map);
-const connectionsLayer = L.layerGroup().addTo(map);
+const groupPolygonsLayer = L.layerGroup().addTo(map);
+const groupLabelsLayer = L.layerGroup().addTo(map);
 
 const groupSummaryEl = document.getElementById("group-summary");
 
 function clearVisualLayers() {
-    groupCirclesLayer.clearLayers();
-    connectionsLayer.clearLayers();
+    groupPolygonsLayer.clearLayers();
+    groupLabelsLayer.clearLayers();
 }
 
 function getMarkerLatLng(markerObj) {
@@ -31,7 +31,6 @@ function buildAdjacencyAndConnectedPairs() {
     const adjacency = Array.from({ length: n }, function () {
         return [];
     });
-    const connectedPairs = [];
 
     for (let i = 0; i < n - 1; i++) {
         const p1 = getMarkerLatLng(markers[i]);
@@ -43,18 +42,12 @@ function buildAdjacencyAndConnectedPairs() {
             if (distance <= DISTANCE_THRESHOLD_METERS) {
                 adjacency[i].push(j);
                 adjacency[j].push(i);
-                connectedPairs.push({
-                    i: i,
-                    j: j,
-                    distance: distance
-                });
             }
         }
     }
 
     return {
-        adjacency: adjacency,
-        connectedPairs: connectedPairs
+        adjacency: adjacency
     };
 }
 
@@ -92,87 +85,63 @@ function findConnectedComponents(adjacency) {
     return groups;
 }
 
-function drawConnectedPairLinesWithDistance(connectedPairs) {
-    for (let k = 0; k < connectedPairs.length; k++) {
-        const pair = connectedPairs[k];
-        const m1 = markers[pair.i];
-        const m2 = markers[pair.j];
+function getOrderedGroupPoints(group) {
+    const points = group.map(function (index) {
+        return getMarkerLatLng(markers[index]);
+    });
 
-        const p1 = getMarkerLatLng(m1);
-        const p2 = getMarkerLatLng(m2);
+    let latSum = 0;
+    let lngSum = 0;
 
-        const polyline = L.polyline(
-            [p1, p2],
-            {
-                color: "#2b5cab",
-                weight: 2,
-                opacity: 0.9,
-                dashArray: "6 6"
-            }
-        ).addTo(connectionsLayer);
-
-        polyline
-            .bindTooltip(
-                pair.distance.toFixed(1) + " m",
-                {
-                    permanent: true,
-                    direction: "center",
-                    className: "distance-label"
-                }
-            )
-            .openTooltip();
+    for (let i = 0; i < points.length; i++) {
+        latSum += points[i].lat;
+        lngSum += points[i].lng;
     }
+
+    const centroid = L.latLng(
+        latSum / points.length,
+        lngSum / points.length
+    );
+
+    points.sort(function (a, b) {
+        const angleA = Math.atan2(a.lat - centroid.lat, a.lng - centroid.lng);
+        const angleB = Math.atan2(b.lat - centroid.lat, b.lng - centroid.lng);
+        return angleA - angleB;
+    });
+
+    return {
+        points: points,
+        centroid: centroid
+    };
 }
 
-function drawGroupCircles(groups) {
+function drawGroupPolygons(groups) {
     const colors = ["#d94841", "#2f9e44", "#3b5bdb", "#f08c00", "#0b7285", "#9c36b5"];
 
     for (let g = 0; g < groups.length; g++) {
         const group = groups[g];
-
-        let latSum = 0;
-        let lngSum = 0;
-
-        for (let m = 0; m < group.length; m++) {
-            const point = getMarkerLatLng(markers[group[m]]);
-            latSum += point.lat;
-            lngSum += point.lng;
-        }
-
-        const centroid = L.latLng(
-            latSum / group.length,
-            lngSum / group.length
-        );
-
-        let radius = 0;
-        for (let m = 0; m < group.length; m++) {
-            const point = getMarkerLatLng(markers[group[m]]);
-            const d = map.distance(centroid, point);
-            if (d > radius) {
-                radius = d;
-            }
-        }
-
-        const visibleRadius = Math.max(radius, 10);
+        const orderedGroup = getOrderedGroupPoints(group);
         const color = colors[g % colors.length];
         const groupName = "g" + (g + 1);
 
-        L.circle(
-            centroid,
+        L.polygon(
+            orderedGroup.points,
             {
-                radius: visibleRadius,
                 color: color,
                 weight: 2,
                 fillColor: color,
                 fillOpacity: 0.12
             }
-        )
-            .bindTooltip(groupName, {
-                permanent: true,
-                direction: "center",
-                className: "distance-label"
+        ).addTo(groupPolygonsLayer);
+
+        L.marker(orderedGroup.centroid, {
+            icon: L.divIcon({
+                className: "group-label-marker",
+                html: '<div class="group-label" style="--group-color:' + color + '">' + groupName + '</div>',
+                iconSize: [1, 1],
+                iconAnchor: [0, 0]
             })
-            .addTo(groupCirclesLayer);
+        }).addTo(groupLabelsLayer);
     }
 }
 
@@ -210,8 +179,7 @@ function recomputeGroupsAndRender() {
     const graphResult = buildAdjacencyAndConnectedPairs();
     const groups = findConnectedComponents(graphResult.adjacency);
 
-    drawConnectedPairLinesWithDistance(graphResult.connectedPairs);
-    drawGroupCircles(groups);
+    drawGroupPolygons(groups);
     renderGroupSummary(groups);
 }
 
