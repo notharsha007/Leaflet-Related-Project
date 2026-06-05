@@ -99,7 +99,7 @@ function updateMapButtons() {
     mapButtonsEl.appendChild(createMapButton("fa-solid fa-arrow-rotate-left", "Undo last marker", "undo", undoLastMarker));
     mapButtonsEl.appendChild(createMapButton("fa-solid fa-trash", "Clear all markers", "clear", clearAllMarkers));
     mapButtonsEl.appendChild(createMapButton("fa-regular fa-eye", "Toggle hide/show markers", "visibility", toggleMarkerVisibility));
-    mapButtonsEl.appendChild(createMapButton("fa-solid fa-ruler-combined", "Toggle distance", "distance", toggleDistanceLines));
+    mapButtonsEl.appendChild(createMapButton("fa-solid fa-ruler-combined", "Toggle distance(not functional)", "distance", toggleDistanceLines));
     mapButtonsEl.appendChild(createMapButton("fa-solid fa-circle-info", "Workflow info", "info", showWorkflowInfo));
     mapButtonsEl.appendChild(createMapButton("fa-regular fa-circle-dot", "Toggle radius rings", "rings", toggleRadiusRings));
     setMapButtonStates();
@@ -133,9 +133,11 @@ function createMarkerIcon(markerObj) {
         classes.push("hidden-marker");
     }
 
+    const groupStyle = markerObj.groupIndex === null ? "" : ' style="background:' + GROUP_COLORS[markerObj.groupIndex % GROUP_COLORS.length] + '"';
+
     return L.divIcon({
         className: "marker-dot-icon",
-        html: '<div class="' + classes.join(" ") + '">' + markerObj.id + "</div>",
+        html: '<div class="' + classes.join(" ") + '"' + groupStyle + ">" + markerObj.id + "</div>",
         iconSize: [28, 28],
         iconAnchor: [14, 14]
     });
@@ -266,6 +268,39 @@ function averagePoint(points) {
     return L.latLng(latSum / points.length, lngSum / points.length);
 }
 
+function crossProduct(origin, pointA, pointB) {
+    return (pointA.lng - origin.lng) * (pointB.lat - origin.lat) - (pointA.lat - origin.lat) * (pointB.lng - origin.lng);
+}
+
+function getConvexHull(points) {
+    const sortedPoints = points.slice().sort(function (pointA, pointB) {
+        if (pointA.lng === pointB.lng) {
+            return pointA.lat - pointB.lat;
+        }
+        return pointA.lng - pointB.lng;
+    });
+
+    const lowerHull = [];
+    for (let i = 0; i < sortedPoints.length; i++) {
+        while (lowerHull.length >= 2 && crossProduct(lowerHull[lowerHull.length - 2], lowerHull[lowerHull.length - 1], sortedPoints[i]) <= 0) {
+            lowerHull.pop();
+        }
+        lowerHull.push(sortedPoints[i]);
+    }
+
+    const upperHull = [];
+    for (let i = sortedPoints.length - 1; i >= 0; i--) {
+        while (upperHull.length >= 2 && crossProduct(upperHull[upperHull.length - 2], upperHull[upperHull.length - 1], sortedPoints[i]) <= 0) {
+            upperHull.pop();
+        }
+        upperHull.push(sortedPoints[i]);
+    }
+
+    lowerHull.pop();
+    upperHull.pop();
+    return lowerHull.concat(upperHull);
+}
+
 function getMarkersWithinRadius(seedIndex, candidateIndices) {
     const seedLatLng = markers[seedIndex].marker.getLatLng();
     const nearby = [];
@@ -382,28 +417,20 @@ function renderGroups(groups, seeds) {
         });
 
         if (group.length >= 3) {
-            const polygon = L.polygon(points, {
+            L.polygon(getConvexHull(points), {
                 color: color,
                 weight: 3,
                 fillColor: color,
                 fillOpacity: 0.12,
                 className: "group-shape"
             }).addTo(groupPolygonLayer);
-
-            polygon.bindTooltip("g" + (g + 1) + "<br>" + ids.join(", "), {
-                className: "group-hover-tooltip"
-            });
         } else if (group.length === 2) {
-            const line = L.polyline(points, {
+            L.polyline(points, {
                 color: color,
                 weight: 3,
                 dashArray: showDistanceEnabled ? null : "6 10",
                 className: "group-shape"
             }).addTo(groupPolygonLayer);
-
-            line.bindTooltip("g" + (g + 1) + "<br>" + ids.join(", "), {
-                className: "group-hover-tooltip"
-            });
         } else {
             L.circleMarker(points[0], {
                 color: color,
