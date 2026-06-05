@@ -33,6 +33,7 @@ body {
 .app-header {
     display: flex;
     align-items: center;
+    justify-content: center;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 18px;
@@ -42,8 +43,12 @@ body {
 
 .header-title-wrap h1 {
     margin: 0;
-    font-size: 24px;
-    letter-spacing: 0.3px;
+    font-size: 28px;
+    letter-spacing: 0.6px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #173a38;
+    text-shadow: 0 1px 0 #ffffff;
 }
 
 .app-main {
@@ -102,6 +107,16 @@ body {
 
 .map-button:hover {
     transform: translateX(-1px);
+}
+
+.map-button i {
+    font-size: 15px;
+    color: #254043;
+}
+
+.map-button.is-active {
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.38), 0 8px 18px rgba(45, 64, 72, 0.2);
+    border-color: #2ea857;
 }
 
 .leaflet-bottom.leaflet-left .coord-display {

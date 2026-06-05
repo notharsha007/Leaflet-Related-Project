@@ -31,6 +31,7 @@ let selectedMarkerId = null;
 let lastGroups = [];
 let lastGroupSeeds = [];
 let toastTimer = null;
+let markerDetailsVisible = false;
 
 const markers = [];
 
@@ -69,7 +70,7 @@ function createMapButton(icon, label, action, handler) {
     button.title = label;
     button.setAttribute("aria-label", label);
     button.dataset.action = action;
-    button.textContent = icon;
+    button.innerHTML = '<i class="' + icon + '"></i>';
     button.addEventListener("click", handler);
     return button;
 }
@@ -94,13 +95,13 @@ function setMapButtonStates() {
 
 function updateMapButtons() {
     mapButtonsEl.innerHTML = "";
-    mapButtonsEl.appendChild(createMapButton("✎", "Toggle marker", "toggle-marker", toggleAddMode));
-    mapButtonsEl.appendChild(createMapButton("↶", "Undo last marker", "undo", undoLastMarker));
-    mapButtonsEl.appendChild(createMapButton("⌫", "Clear all markers", "clear", clearAllMarkers));
-    mapButtonsEl.appendChild(createMapButton("◫", "Toggle hide/show markers", "visibility", toggleMarkerVisibility));
-    mapButtonsEl.appendChild(createMapButton("⋯", "Toggle distance", "distance", toggleDistanceLines));
-    mapButtonsEl.appendChild(createMapButton("i", "Workflow info", "info", showWorkflowInfo));
-    mapButtonsEl.appendChild(createMapButton("◌", "Toggle radius rings", "rings", toggleRadiusRings));
+    mapButtonsEl.appendChild(createMapButton("fa-solid fa-pen", "Toggle marker", "toggle-marker", toggleAddMode));
+    mapButtonsEl.appendChild(createMapButton("fa-solid fa-arrow-rotate-left", "Undo last marker", "undo", undoLastMarker));
+    mapButtonsEl.appendChild(createMapButton("fa-solid fa-trash", "Clear all markers", "clear", clearAllMarkers));
+    mapButtonsEl.appendChild(createMapButton("fa-regular fa-eye", "Toggle hide/show markers", "visibility", toggleMarkerVisibility));
+    mapButtonsEl.appendChild(createMapButton("fa-solid fa-ruler-combined", "Toggle distance", "distance", toggleDistanceLines));
+    mapButtonsEl.appendChild(createMapButton("fa-solid fa-circle-info", "Workflow info", "info", showWorkflowInfo));
+    mapButtonsEl.appendChild(createMapButton("fa-regular fa-circle-dot", "Toggle radius rings", "rings", toggleRadiusRings));
     setMapButtonStates();
 }
 
@@ -178,6 +179,14 @@ function setMarkerLayerVisibility() {
 }
 
 function renderMarkerDetails() {
+    if (!markerDetailsVisible) {
+        markerDetailsEl.textContent = "Marker details are hidden. Click Show Marker Details.";
+        showMarkerDetailsBtnEl.textContent = "Show Marker Details";
+        return;
+    }
+
+    showMarkerDetailsBtnEl.textContent = "Hide Marker Details";
+
     if (markers.length === 0) {
         markerDetailsEl.textContent = "No markers have been added yet.";
         return;
@@ -606,8 +615,9 @@ thresholdInputEl.addEventListener("change", function () {
 });
 
 showMarkerDetailsBtnEl.addEventListener("click", function () {
+    markerDetailsVisible = !markerDetailsVisible;
     renderMarkerDetails();
-    showToast("Marker details displayed");
+    showToast(markerDetailsVisible ? "Marker details shown" : "Marker details hidden");
 });
 
 groupButtonEl.addEventListener("click", function () {
