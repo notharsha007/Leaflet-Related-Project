@@ -6,23 +6,66 @@
     <title>Multi Marker Map</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
     <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-    <div id="map-container">
-        <div id="map"></div>
-    </div>
+    <div class="app-shell">
+        <header class="app-header">
+            <div class="header-title-wrap">
+                <h1>Markers grouper</h1>
+            </div>
+        </header>
 
-    <div id="controls">
-        <button id="clear-markers-btn">Clear All Markers</button>
-        <button id="group-markers-btn">Group Markers</button>
+        <main class="app-main">
+            <section class="map-column">
+                <div class="map-panel">
+                    <div id="map"></div>
+                    <div id="toast" class="toast" aria-live="polite"></div>
+                    <div id="map-buttons" class="map-buttons"></div>
+                </div>
 
-        <div id="group-summary" class="group-summary">
-            Add markers on the map, then click Group Markers.
-        </div>
+                <section class="card group-results-card">
+                    <h2>Group Results</h2>
+                    <p id="group-empty" class="small-note">Add markers and group them to inspect group details.</p>
+                    <ul id="group-list" class="group-list"></ul>
+                </section>
+            </section>
+
+            <aside id="controls" class="control-panel">
+                <section class="card">
+                    <h2>Marker Options</h2>
+                    <button id="show-marker-details-btn" class="btn btn-primary full-width">Show Marker Details</button>
+                    <div id="marker-details" class="details-box">Marker details will appear here.</div>
+                </section>
+
+                <section class="card">
+                    <h2>Grouping Options</h2>
+                    <label for="threshold-input" class="field-label">Grouping Threshold</label>
+                    <div class="threshold-input-row">
+                        <input id="threshold-input" class="input-control" type="number" min="20" max="5000" step="10" value="100" />
+                        <span class="input-suffix">m</span>
+                    </div>
+                    <button id="group-markers-btn" class="btn btn-primary full-width">Group Markers</button>
+                </section>
+
+                <section class="card">
+                    <h2>Mapping Options</h2>
+                    <label for="basemap-select" class="field-label">Basemap</label>
+                    <select id="basemap-select" class="input-control">
+                        <option value="street">Standard Street</option>
+                        <option value="satellite">Satellite</option>
+                        <option value="grayscale">Grayscale</option>
+                        <option value="dark">Dark</option>
+                    </select>
+                </section>
+            </aside>
+        </main>
     </div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
