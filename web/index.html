@@ -70,6 +70,59 @@
         </main>
     </div>
 
+    <div id="workflow-modal" class="modal-overlay" aria-hidden="true">
+        <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="workflow-modal-title">
+            <div class="modal-header">
+                <h2 id="workflow-modal-title">Project Workflow</h2>
+                <button id="workflow-modal-close" class="modal-close-btn" type="button" aria-label="Close workflow info">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <section>
+                    <h3>1. Add Markers</h3>
+                    <p>Turn marker mode on with the marker toggle button. Left-click on the map to add markers. Right-click an existing marker to remove it while marker mode is on. Left-click a marker to select it.</p>
+                </section>
+
+                <section>
+                    <h3>2. Set Grouping Threshold</h3>
+                    <p>Use the Grouping Threshold input to define the maximum distance, in meters, from a seed marker. A marker becomes a group candidate when it is within this threshold from the seed.</p>
+                </section>
+
+                <section>
+                    <h3>3. Group Markers</h3>
+                    <p>Click Group Markers to run the greedy grouping process. The app checks each remaining marker as a possible seed, finds all remaining markers within the threshold, and selects the seed that creates the largest candidate group.</p>
+                </section>
+
+                <section>
+                    <h3>4. Understand Greedy Grouping</h3>
+                    <p>The algorithm chooses the best seed for the current step, creates that group, removes those markers from the remaining pool, and repeats. This is greedy behavior, so it is understandable and fast, but not guaranteed to be globally optimal. If two seeds create equal-sized groups, the earlier marker wins the tie.</p>
+                </section>
+
+                <section>
+                    <h3>5. Inspect Group Results</h3>
+                    <p>Group Results shows the final groups as g1, g2, g3, and so on. Markers and group visuals use matching colors so the map and result list stay connected.</p>
+                </section>
+
+                <section>
+                    <h3>6. Inspect Seed Candidates</h3>
+                    <p>After grouping, click Show Seed Candidates Details. Each group section lists the markers inside that final group. For each marker, Group Candidates shows all markers within threshold if that marker were used as the seed. Ideal Seed means the marker selected by the greedy algorithm for that group.</p>
+                </section>
+
+                <section>
+                    <h3>7. Use Radius Rings</h3>
+                    <p>Toggle radius rings to show the threshold radius around the chosen group seeds. These colored rings help explain why nearby markers were included in a group.</p>
+                </section>
+
+                <section>
+                    <h3>8. Other Controls</h3>
+                    <p>Undo removes the most recently added marker. Clear removes all markers and group visuals. Basemap changes the map style. Show Marker Details displays marker coordinates and group assignment.</p>
+                </section>
+            </div>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="script.js"></script>
 </body>

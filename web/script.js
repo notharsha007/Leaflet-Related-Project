@@ -55,6 +55,8 @@ const toastEl = document.getElementById("toast");
 const mapButtonsEl = document.getElementById("map-buttons");
 const seedCandidatesEmptyEl = document.getElementById("seed-candidates-empty");
 const seedCandidatesListEl = document.getElementById("seed-candidates-list");
+const workflowModalEl = document.getElementById("workflow-modal");
+const workflowModalCloseEl = document.getElementById("workflow-modal-close");
 
 function showToast(message) {
     toastEl.textContent = message;
@@ -455,31 +457,6 @@ function buildGroups() {
 
 function renderSelectedRing() {
     selectedRingLayer.clearLayers();
-
-    if (!selectedMarkerId || !showRadiusRings) {
-        return;
-    }
-
-    let selectedMarker = null;
-    for (let i = 0; i < markers.length; i++) {
-        if (markers[i].id === selectedMarkerId) {
-            selectedMarker = markers[i];
-            break;
-        }
-    }
-
-    if (!selectedMarker) {
-        return;
-    }
-
-    L.circle(selectedMarker.marker.getLatLng(), {
-        radius: thresholdMeters,
-        color: "#ffd666",
-        weight: 2,
-        fillColor: "#ffd666",
-        fillOpacity: 0.05,
-        dashArray: "4 6"
-    }).addTo(selectedRingLayer);
 }
 
 function renderGroups(groups, seeds) {
@@ -712,7 +689,13 @@ function toggleRadiusRings() {
 }
 
 function showWorkflowInfo() {
-    showToast("Step 1 add markers, step 2 group markers, step 3 inspect group details");
+    workflowModalEl.classList.add("show");
+    workflowModalEl.setAttribute("aria-hidden", "false");
+}
+
+function closeWorkflowInfo() {
+    workflowModalEl.classList.remove("show");
+    workflowModalEl.setAttribute("aria-hidden", "true");
 }
 
 function initCoordinateDisplay() {
@@ -769,6 +752,22 @@ seedCandidatesToggleBtnEl.addEventListener("click", function () {
 
     seedCandidatesVisible = !seedCandidatesVisible;
     renderSeedCandidateDetails();
+});
+
+workflowModalCloseEl.addEventListener("click", function () {
+    closeWorkflowInfo();
+});
+
+workflowModalEl.addEventListener("click", function (event) {
+    if (event.target === workflowModalEl) {
+        closeWorkflowInfo();
+    }
+});
+
+document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && workflowModalEl.classList.contains("show")) {
+        closeWorkflowInfo();
+    }
 });
 
 map.on("click", function (event) {
