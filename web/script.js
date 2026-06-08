@@ -40,6 +40,7 @@ const markerLayer = L.layerGroup().addTo(map);
 const groupPolygonLayer = L.layerGroup().addTo(map);
 const groupLabelLayer = L.layerGroup().addTo(map);
 const groupRingLayer = L.layerGroup().addTo(map);
+const distanceLayer = L.layerGroup().addTo(map);
 const selectedRingLayer = L.layerGroup().addTo(map);
 const hoverLayer = L.layerGroup().addTo(map);
 
@@ -105,7 +106,6 @@ function updateMapButtons() {
     mapButtonsEl.appendChild(createMapButton("fa-solid fa-arrow-rotate-left", "Undo last marker", "undo", undoLastMarker));
     mapButtonsEl.appendChild(createMapButton("fa-solid fa-trash", "Clear all markers", "clear", clearAllMarkers));
     mapButtonsEl.appendChild(createMapButton("fa-regular fa-eye", "Toggle hide/show markers", "visibility", toggleMarkerVisibility));
-    mapButtonsEl.appendChild(createMapButton("fa-solid fa-ruler-combined", "Toggle distance(not functional)", "distance", toggleDistanceLines));
     mapButtonsEl.appendChild(createMapButton("fa-solid fa-circle-info", "Workflow info", "info", showWorkflowInfo));
     mapButtonsEl.appendChild(createMapButton("fa-regular fa-circle-dot", "Toggle radius rings", "rings", toggleRadiusRings));
     setMapButtonStates();
@@ -125,6 +125,7 @@ function clearVisualLayers() {
     groupPolygonLayer.clearLayers();
     groupLabelLayer.clearLayers();
     groupRingLayer.clearLayers();
+    distanceLayer.clearLayers();
     selectedRingLayer.clearLayers();
     hoverLayer.clearLayers();
 }
@@ -363,6 +364,18 @@ function averagePoint(points) {
     return L.latLng(latSum / points.length, lngSum / points.length);
 }
 
+function midpoint(pointA, pointB) {
+    return L.latLng((pointA.lat + pointB.lat) / 2, (pointA.lng + pointB.lng) / 2);
+}
+
+function formatDistance(meters) {
+    if (meters >= 1000) {
+        return (meters / 1000).toFixed(2) + " km";
+    }
+
+    return Math.round(meters) + " m";
+}
+
 function crossProduct(origin, pointA, pointB) {
     return (pointA.lng - origin.lng) * (pointB.lat - origin.lat) - (pointA.lat - origin.lat) * (pointB.lng - origin.lng);
 }
@@ -459,6 +472,57 @@ function renderSelectedRing() {
     selectedRingLayer.clearLayers();
 }
 
+function renderGroupDistances(groups) {
+    distanceLayer.clearLayers();
+
+    if (!showDistanceEnabled) {
+        return;
+    }
+
+    for (let g = 0; g < groups.length; g++) {
+        const group = groups[g];
+        const color = GROUP_COLORS[g % GROUP_COLORS.length];
+
+        for (let i = 0; i < group.length; i++) {
+            const markerA = markers[group[i]];
+            if (!markerA) {
+                continue;
+            }
+
+            const pointA = markerA.marker.getLatLng();
+
+            for (let j = i + 1; j < group.length; j++) {
+                const markerB = markers[group[j]];
+                if (!markerB) {
+                    continue;
+                }
+
+                const pointB = markerB.marker.getLatLng();
+                const distance = map.distance(pointA, pointB);
+
+                L.polyline([pointA, pointB], {
+                    color: color,
+                    weight: 2,
+                    opacity: 0.72,
+                    dashArray: "4 7",
+                    interactive: false,
+                    className: "distance-line"
+                }).addTo(distanceLayer);
+
+                L.marker(midpoint(pointA, pointB), {
+                    interactive: false,
+                    icon: L.divIcon({
+                        className: "distance-label-marker",
+                        html: '<div class="distance-label" style="--group-color:' + color + '">' + formatDistance(distance) + "</div>",
+                        iconSize: [1, 1],
+                        iconAnchor: [0, 0]
+                    })
+                }).addTo(distanceLayer);
+            }
+        }
+    }
+}
+
 function renderGroups(groups, seeds) {
     clearVisualLayers();
 
@@ -525,6 +589,7 @@ function renderGroups(groups, seeds) {
     lastGroups = groups;
     lastGroupSeeds = seeds;
     updateMarkerGroupAssignments(groups);
+    renderGroupDistances(groups);
     refreshAllMarkers();
     renderGroupResults(groups);
     renderMarkerDetails();
@@ -674,7 +739,7 @@ function toggleDistanceLines() {
         renderGroups(lastGroups, lastGroupSeeds);
     }
     setMapButtonStates();
-    showToast(showDistanceEnabled ? "Distance lines shown" : "Distance lines hidden");
+    showToast(showDistanceEnabled ? "Group distances shown" : "Group distances hidden");
 }
 
 function toggleRadiusRings() {
