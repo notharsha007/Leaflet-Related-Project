@@ -492,11 +492,15 @@ function addMarker(latLng) {
     };
 
     marker.on("click", function () {
-        if (addModeEnabled) {
-            removeMarkerById(markerId);
-        } else {
-            selectMarker(markerId);
+        selectMarker(markerId);
+    });
+
+    marker.on("contextmenu", function (event) {
+        L.DomEvent.stop(event);
+        if (!addModeEnabled) {
+            return;
         }
+        removeMarkerById(markerId);
     });
 
     markers.push(markerObj);
@@ -521,7 +525,6 @@ function removeMarkerById(markerId) {
     const removed = markers[index];
     markerLayer.removeLayer(removed.marker);
     markers.splice(index, 1);
-    markerCount = markers.length;
     selectedMarkerId = markers.length > 0 ? markers[markers.length - 1].id : null;
     lastGroups = [];
     lastGroupSeeds = [];
