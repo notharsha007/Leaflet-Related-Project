@@ -160,6 +160,10 @@ body {
     min-height: 180px;
 }
 
+.seed-candidates-card {
+    min-height: 160px;
+}
+
 .btn {
     border: 1px solid transparent;
     border-radius: 10px;
@@ -191,6 +195,10 @@ body {
     background: #f7f9f8;
     border-color: #d6e0dd;
     color: #2b3b3f;
+}
+
+#seed-candidates-toggle-btn {
+    margin-top: 8px;
 }
 
 .btn-danger {
@@ -292,6 +300,68 @@ body {
     font-size: 13px;
     color: #304244;
     line-height: 1.4;
+}
+
+.seed-candidates-list {
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.seed-candidate-group {
+    border-radius: 10px;
+    border: 1px solid #dce5e2;
+    border-left: 4px solid var(--group-color, #2b5cab);
+    background: #fcfefd;
+    padding: 10px 12px;
+}
+
+.seed-candidate-group h3 {
+    margin: 0 0 10px;
+    display: inline-flex;
+    align-items: center;
+    min-width: 34px;
+    border-radius: 999px;
+    background: var(--group-color, #2b5cab);
+    color: #fff;
+    padding: 4px 9px;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.seed-candidate-marker-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.seed-candidate-item {
+    border-top: 1px solid #e5ece9;
+    padding: 8px 0 0;
+}
+
+.seed-candidate-item:first-child {
+    border-top: 0;
+    padding-top: 0;
+}
+
+.seed-candidate-item h4 {
+    margin: 0 0 6px;
+    font-size: 13px;
+    color: #173a38;
+}
+
+.seed-candidate-item p {
+    margin: 4px 0 0;
+    color: #304244;
+    font-size: 13px;
+    line-height: 1.45;
 }
 
 .toast {

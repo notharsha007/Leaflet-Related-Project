@@ -32,6 +32,7 @@ let lastGroups = [];
 let lastGroupSeeds = [];
 let toastTimer = null;
 let markerDetailsVisible = false;
+let seedCandidatesVisible = false;
 
 const markers = [];
 
@@ -48,9 +49,12 @@ const groupEmptyEl = document.getElementById("group-empty");
 const basemapSelectEl = document.getElementById("basemap-select");
 const thresholdInputEl = document.getElementById("threshold-input");
 const groupButtonEl = document.getElementById("group-markers-btn");
+const seedCandidatesToggleBtnEl = document.getElementById("seed-candidates-toggle-btn");
 const showMarkerDetailsBtnEl = document.getElementById("show-marker-details-btn");
 const toastEl = document.getElementById("toast");
 const mapButtonsEl = document.getElementById("map-buttons");
+const seedCandidatesEmptyEl = document.getElementById("seed-candidates-empty");
+const seedCandidatesListEl = document.getElementById("seed-candidates-list");
 
 function showToast(message) {
     toastEl.textContent = message;
@@ -241,6 +245,95 @@ function renderGroupResults(groups) {
         item.appendChild(chip);
         item.appendChild(text);
         groupListEl.appendChild(item);
+    }
+}
+
+function getCandidateMarkerIds(seedIndex) {
+    const seedLatLng = markers[seedIndex].marker.getLatLng();
+    const candidateIds = [];
+
+    for (let i = 0; i < markers.length; i++) {
+        const distance = map.distance(seedLatLng, markers[i].marker.getLatLng());
+        if (distance <= thresholdMeters) {
+            candidateIds.push(markers[i].id);
+        }
+    }
+
+    return candidateIds;
+}
+
+function getChosenSeedLabels() {
+    const seedLabels = {};
+
+    for (let i = 0; i < lastGroupSeeds.length; i++) {
+        const seedMarker = markers[lastGroupSeeds[i]];
+        if (seedMarker) {
+            seedLabels[seedMarker.id] = true;
+        }
+    }
+
+    return seedLabels;
+}
+
+function renderSeedCandidateDetails() {
+    seedCandidatesListEl.innerHTML = "";
+    seedCandidatesToggleBtnEl.textContent = seedCandidatesVisible ? "Hide Seed Candidates Details" : "Show Seed Candidates Details";
+
+    if (!seedCandidatesVisible) {
+        seedCandidatesEmptyEl.textContent = lastGroups.length > 0 ? "Click Show Seed Candidates Details to inspect marker seed candidates." : "Group markers to see seed candidate details.";
+        return;
+    }
+
+    if (markers.length === 0 || lastGroups.length === 0) {
+        seedCandidatesEmptyEl.textContent = "Group markers to see seed candidate details.";
+        return;
+    }
+
+    seedCandidatesEmptyEl.textContent = "";
+
+    const chosenSeedLabels = getChosenSeedLabels();
+
+    for (let g = 0; g < lastGroups.length; g++) {
+        const group = lastGroups[g];
+        const color = GROUP_COLORS[g % GROUP_COLORS.length];
+        const groupItem = document.createElement("li");
+        groupItem.className = "seed-candidate-group";
+        groupItem.style.setProperty("--group-color", color);
+
+        const groupTitle = document.createElement("h3");
+        groupTitle.textContent = "g" + (g + 1);
+        groupItem.appendChild(groupTitle);
+
+        const groupMarkerList = document.createElement("ul");
+        groupMarkerList.className = "seed-candidate-marker-list";
+
+        for (let i = 0; i < group.length; i++) {
+            const markerIndex = group[i];
+            const markerObj = markers[markerIndex];
+            if (!markerObj) {
+                continue;
+            }
+
+            const item = document.createElement("li");
+            item.className = "seed-candidate-item";
+
+            const title = document.createElement("h4");
+            title.textContent = markerObj.id;
+
+            const candidates = document.createElement("p");
+            candidates.textContent = "Group Candidates: " + getCandidateMarkerIds(markerIndex).join(", ");
+
+            const idealSeed = document.createElement("p");
+            idealSeed.textContent = chosenSeedLabels[markerObj.id] ? "Ideal Seed: Yes" : "Ideal Seed: No";
+
+            item.appendChild(title);
+            item.appendChild(candidates);
+            item.appendChild(idealSeed);
+            groupMarkerList.appendChild(item);
+        }
+
+        groupItem.appendChild(groupMarkerList);
+        seedCandidatesListEl.appendChild(groupItem);
     }
 }
 
@@ -459,6 +552,7 @@ function renderGroups(groups, seeds) {
     renderGroupResults(groups);
     renderMarkerDetails();
     renderSelectedRing();
+    renderSeedCandidateDetails();
 }
 
 function groupMarkers() {
@@ -506,10 +600,16 @@ function addMarker(latLng) {
     markers.push(markerObj);
     markerLayer.addLayer(marker);
     selectedMarkerId = markerId;
+    lastGroups = [];
+    lastGroupSeeds = [];
+    seedCandidatesVisible = false;
+    clearVisualLayers();
     refreshMarkerTooltip(markerObj);
     refreshAllMarkers();
+    renderSelectedRing();
     renderMarkerDetails();
-    renderGroupResults(lastGroups);
+    renderGroupResults([]);
+    renderSeedCandidateDetails();
     showToast("Marker " + markerId + " added");
 }
 
@@ -528,10 +628,12 @@ function removeMarkerById(markerId) {
     selectedMarkerId = markers.length > 0 ? markers[markers.length - 1].id : null;
     lastGroups = [];
     lastGroupSeeds = [];
+    seedCandidatesVisible = false;
     clearVisualLayers();
     refreshAllMarkers();
     renderGroupResults([]);
     renderMarkerDetails();
+    renderSeedCandidateDetails();
     showToast("Removed " + removed.id);
 }
 
@@ -559,11 +661,13 @@ function clearAllMarkers() {
     selectedMarkerId = null;
     lastGroups = [];
     lastGroupSeeds = [];
+    seedCandidatesVisible = false;
 
     markerLayer.clearLayers();
     clearVisualLayers();
     renderGroupResults([]);
     renderMarkerDetails();
+    renderSeedCandidateDetails();
     setMapButtonStates();
     showToast("All markers cleared");
 }
@@ -636,10 +740,12 @@ thresholdInputEl.addEventListener("change", function () {
         thresholdMeters = value;
         lastGroups = [];
         lastGroupSeeds = [];
+        seedCandidatesVisible = false;
         clearVisualLayers();
         renderGroupResults([]);
         renderMarkerDetails();
         renderSelectedRing();
+        renderSeedCandidateDetails();
         showToast("Threshold set to " + thresholdMeters + " m");
     }
 });
@@ -652,6 +758,17 @@ showMarkerDetailsBtnEl.addEventListener("click", function () {
 
 groupButtonEl.addEventListener("click", function () {
     groupMarkers();
+});
+
+seedCandidatesToggleBtnEl.addEventListener("click", function () {
+    if (lastGroups.length === 0) {
+        showToast("Group markers first");
+        renderSeedCandidateDetails();
+        return;
+    }
+
+    seedCandidatesVisible = !seedCandidatesVisible;
+    renderSeedCandidateDetails();
 });
 
 map.on("click", function (event) {
@@ -667,6 +784,7 @@ function init() {
     setMarkerLayerVisibility();
     renderGroupResults([]);
     renderMarkerDetails();
+    renderSeedCandidateDetails();
     setMapButtonStates();
 }
 
