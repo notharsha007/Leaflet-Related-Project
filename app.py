@@ -2,4 +2,4 @@ import eel
 
 eel.init("web")
 
-eel.start("index.html")
+eel.start("index.html", port=0)
