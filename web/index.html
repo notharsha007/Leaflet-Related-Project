@@ -25,16 +25,24 @@
                     <div id="map-buttons" class="map-buttons"></div>
                 </div>
 
+                <div class="preview-grid">
+                    <section class="card possible-groups-card">
+                        <h2>Possible Groups</h2>
+                        <p id="possible-groups-empty" class="small-note">Add markers to preview possible groups.</p>
+                        <ul id="possible-groups-list" class="possible-groups-list"></ul>
+                    </section>
+
+                    <section class="card seed-candidates-card">
+                        <h2>Live Seed Candidate Details</h2>
+                        <p id="seed-candidates-empty" class="small-note">Add markers to see live seed candidate details.</p>
+                        <ul id="seed-candidates-list" class="seed-candidates-list"></ul>
+                    </section>
+                </div>
+
                 <section class="card group-results-card">
                     <h2>Group Results</h2>
                     <p id="group-empty" class="small-note">Add markers and group them to inspect group details.</p>
                     <ul id="group-list" class="group-list"></ul>
-                </section>
-
-                <section class="card seed-candidates-card">
-                    <h2>Seed Candidates Details</h2>
-                    <p id="seed-candidates-empty" class="small-note">Group markers to see seed candidate details.</p>
-                    <ul id="seed-candidates-list" class="seed-candidates-list"></ul>
                 </section>
             </section>
 
@@ -53,7 +61,6 @@
                         <span class="input-suffix">m</span>
                     </div>
                     <button id="group-markers-btn" class="btn btn-primary full-width">Group Markers</button>
-                    <button id="seed-candidates-toggle-btn" class="btn btn-primary full-width">Show Seed Candidates Details</button>
                 </section>
 
                 <section class="card">
@@ -107,7 +114,7 @@
 
                 <section>
                     <h3>6. Inspect Seed Candidates</h3>
-                    <p>After grouping, click Show Seed Candidates Details. Each group section lists the markers inside that final group. For each marker, Group Candidates shows all markers within threshold if that marker were used as the seed. Ideal Seed means the marker selected by the greedy algorithm for that group.</p>
+                    <p>Live Seed Candidate Details updates as markers are placed or removed. Each possible group section lists the markers inside that preview group. For each marker, Available Candidates shows markers from that same possible group within threshold if that marker were used as the seed. Ideal Seed means the marker selected by the greedy algorithm for that possible group.</p>
                 </section>
 
                 <section>

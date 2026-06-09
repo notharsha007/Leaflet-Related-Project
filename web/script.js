@@ -32,7 +32,6 @@ let lastGroups = [];
 let lastGroupSeeds = [];
 let toastTimer = null;
 let markerDetailsVisible = false;
-let seedCandidatesVisible = false;
 
 const markers = [];
 
@@ -50,12 +49,13 @@ const groupEmptyEl = document.getElementById("group-empty");
 const basemapSelectEl = document.getElementById("basemap-select");
 const thresholdInputEl = document.getElementById("threshold-input");
 const groupButtonEl = document.getElementById("group-markers-btn");
-const seedCandidatesToggleBtnEl = document.getElementById("seed-candidates-toggle-btn");
 const showMarkerDetailsBtnEl = document.getElementById("show-marker-details-btn");
 const toastEl = document.getElementById("toast");
 const mapButtonsEl = document.getElementById("map-buttons");
 const seedCandidatesEmptyEl = document.getElementById("seed-candidates-empty");
 const seedCandidatesListEl = document.getElementById("seed-candidates-list");
+const possibleGroupsEmptyEl = document.getElementById("possible-groups-empty");
+const possibleGroupsListEl = document.getElementById("possible-groups-list");
 const workflowModalEl = document.getElementById("workflow-modal");
 const workflowModalCloseEl = document.getElementById("workflow-modal-close");
 
@@ -251,25 +251,29 @@ function renderGroupResults(groups) {
     }
 }
 
-function getCandidateMarkerIds(seedIndex) {
+function getCandidateMarkerIds(seedIndex, allowedIndices) {
     const seedLatLng = markers[seedIndex].marker.getLatLng();
     const candidateIds = [];
+    const candidateIndices = allowedIndices || markers.map(function (_, index) {
+        return index;
+    });
 
-    for (let i = 0; i < markers.length; i++) {
-        const distance = map.distance(seedLatLng, markers[i].marker.getLatLng());
+    for (let i = 0; i < candidateIndices.length; i++) {
+        const candidateIndex = candidateIndices[i];
+        const distance = map.distance(seedLatLng, markers[candidateIndex].marker.getLatLng());
         if (distance <= thresholdMeters) {
-            candidateIds.push(markers[i].id);
+            candidateIds.push(markers[candidateIndex].id);
         }
     }
 
     return candidateIds;
 }
 
-function getChosenSeedLabels() {
+function getChosenSeedLabels(seeds) {
     const seedLabels = {};
 
-    for (let i = 0; i < lastGroupSeeds.length; i++) {
-        const seedMarker = markers[lastGroupSeeds[i]];
+    for (let i = 0; i < seeds.length; i++) {
+        const seedMarker = markers[seeds[i]];
         if (seedMarker) {
             seedLabels[seedMarker.id] = true;
         }
@@ -278,26 +282,20 @@ function getChosenSeedLabels() {
     return seedLabels;
 }
 
-function renderSeedCandidateDetails() {
+function renderSeedCandidateDetails(groups, seeds) {
     seedCandidatesListEl.innerHTML = "";
-    seedCandidatesToggleBtnEl.textContent = seedCandidatesVisible ? "Hide Seed Candidates Details" : "Show Seed Candidates Details";
 
-    if (!seedCandidatesVisible) {
-        seedCandidatesEmptyEl.textContent = lastGroups.length > 0 ? "Click Show Seed Candidates Details to inspect marker seed candidates." : "Group markers to see seed candidate details.";
-        return;
-    }
-
-    if (markers.length === 0 || lastGroups.length === 0) {
-        seedCandidatesEmptyEl.textContent = "Group markers to see seed candidate details.";
+    if (markers.length === 0 || groups.length === 0) {
+        seedCandidatesEmptyEl.textContent = "Add markers to see live seed candidate details.";
         return;
     }
 
     seedCandidatesEmptyEl.textContent = "";
 
-    const chosenSeedLabels = getChosenSeedLabels();
+    const chosenSeedLabels = getChosenSeedLabels(seeds);
 
-    for (let g = 0; g < lastGroups.length; g++) {
-        const group = lastGroups[g];
+    for (let g = 0; g < groups.length; g++) {
+        const group = groups[g];
         const color = GROUP_COLORS[g % GROUP_COLORS.length];
         const groupItem = document.createElement("li");
         groupItem.className = "seed-candidate-group";
@@ -324,7 +322,7 @@ function renderSeedCandidateDetails() {
             title.textContent = markerObj.id;
 
             const candidates = document.createElement("p");
-            candidates.textContent = "Group Candidates: " + getCandidateMarkerIds(markerIndex).join(", ");
+            candidates.textContent = "Available Candidates: " + getCandidateMarkerIds(markerIndex, group).join(", ");
 
             const idealSeed = document.createElement("p");
             idealSeed.textContent = chosenSeedLabels[markerObj.id] ? "Ideal Seed: Yes" : "Ideal Seed: No";
@@ -338,6 +336,47 @@ function renderSeedCandidateDetails() {
         groupItem.appendChild(groupMarkerList);
         seedCandidatesListEl.appendChild(groupItem);
     }
+}
+
+function renderPossibleGroups(groups, seeds) {
+    possibleGroupsListEl.innerHTML = "";
+
+    if (markers.length === 0 || groups.length === 0) {
+        possibleGroupsEmptyEl.textContent = "Add markers to preview possible groups.";
+        return;
+    }
+
+    possibleGroupsEmptyEl.textContent = "";
+
+    for (let g = 0; g < groups.length; g++) {
+        const group = groups[g];
+        const seedMarker = markers[seeds[g]];
+        const color = GROUP_COLORS[g % GROUP_COLORS.length];
+        const markerNames = group.map(function (index) {
+            return markers[index].id;
+        });
+
+        const item = document.createElement("li");
+        item.className = "possible-group-item";
+        item.style.setProperty("--group-color", color);
+
+        const chip = document.createElement("span");
+        chip.className = "possible-group-chip";
+        chip.textContent = "g" + (g + 1);
+
+        const text = document.createElement("p");
+        text.textContent = "candidates: " + markerNames.join(", ") + " | ideal seed: " + (seedMarker ? seedMarker.id : "-");
+
+        item.appendChild(chip);
+        item.appendChild(text);
+        possibleGroupsListEl.appendChild(item);
+    }
+}
+
+function renderLivePreview() {
+    const result = markers.length > 0 ? buildGroups() : { groups: [], seeds: [] };
+    renderPossibleGroups(result.groups, result.seeds);
+    renderSeedCandidateDetails(result.groups, result.seeds);
 }
 
 function updateMarkerGroupAssignments(groups) {
@@ -594,7 +633,7 @@ function renderGroups(groups, seeds) {
     renderGroupResults(groups);
     renderMarkerDetails();
     renderSelectedRing();
-    renderSeedCandidateDetails();
+    renderLivePreview();
 }
 
 function groupMarkers() {
@@ -644,14 +683,13 @@ function addMarker(latLng) {
     selectedMarkerId = markerId;
     lastGroups = [];
     lastGroupSeeds = [];
-    seedCandidatesVisible = false;
     clearVisualLayers();
     refreshMarkerTooltip(markerObj);
     refreshAllMarkers();
     renderSelectedRing();
     renderMarkerDetails();
     renderGroupResults([]);
-    renderSeedCandidateDetails();
+    renderLivePreview();
     showToast("Marker " + markerId + " added");
 }
 
@@ -670,12 +708,11 @@ function removeMarkerById(markerId) {
     selectedMarkerId = markers.length > 0 ? markers[markers.length - 1].id : null;
     lastGroups = [];
     lastGroupSeeds = [];
-    seedCandidatesVisible = false;
     clearVisualLayers();
     refreshAllMarkers();
     renderGroupResults([]);
     renderMarkerDetails();
-    renderSeedCandidateDetails();
+    renderLivePreview();
     showToast("Removed " + removed.id);
 }
 
@@ -703,13 +740,12 @@ function clearAllMarkers() {
     selectedMarkerId = null;
     lastGroups = [];
     lastGroupSeeds = [];
-    seedCandidatesVisible = false;
 
     markerLayer.clearLayers();
     clearVisualLayers();
     renderGroupResults([]);
     renderMarkerDetails();
-    renderSeedCandidateDetails();
+    renderLivePreview();
     setMapButtonStates();
     showToast("All markers cleared");
 }
@@ -788,12 +824,11 @@ thresholdInputEl.addEventListener("change", function () {
         thresholdMeters = value;
         lastGroups = [];
         lastGroupSeeds = [];
-        seedCandidatesVisible = false;
         clearVisualLayers();
         renderGroupResults([]);
         renderMarkerDetails();
         renderSelectedRing();
-        renderSeedCandidateDetails();
+        renderLivePreview();
         showToast("Threshold set to " + thresholdMeters + " m");
     }
 });
@@ -806,17 +841,6 @@ showMarkerDetailsBtnEl.addEventListener("click", function () {
 
 groupButtonEl.addEventListener("click", function () {
     groupMarkers();
-});
-
-seedCandidatesToggleBtnEl.addEventListener("click", function () {
-    if (lastGroups.length === 0) {
-        showToast("Group markers first");
-        renderSeedCandidateDetails();
-        return;
-    }
-
-    seedCandidatesVisible = !seedCandidatesVisible;
-    renderSeedCandidateDetails();
 });
 
 workflowModalCloseEl.addEventListener("click", function () {
@@ -848,7 +872,7 @@ function init() {
     setMarkerLayerVisibility();
     renderGroupResults([]);
     renderMarkerDetails();
-    renderSeedCandidateDetails();
+    renderLivePreview();
     setMapButtonStates();
 }
 

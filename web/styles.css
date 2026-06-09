@@ -63,6 +63,14 @@ body {
     display: flex;
     flex-direction: column;
     gap: 14px;
+    min-height: 0;
+}
+
+.preview-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+    gap: 14px;
+    align-items: start;
 }
 
 .map-panel {
@@ -71,13 +79,13 @@ body {
     overflow: hidden;
     border: 1px solid var(--border);
     box-shadow: var(--shadow);
-    min-height: 68vh;
+    min-height: 56vh;
 }
 
 #map {
     width: 100%;
     height: 100%;
-    min-height: 68vh;
+    min-height: 56vh;
 }
 
 .map-buttons {
@@ -157,11 +165,28 @@ body {
 }
 
 .group-results-card {
-    min-height: 180px;
+    min-height: 0;
+    max-height: 220px;
+    overflow: auto;
 }
 
 .seed-candidates-card {
-    min-height: 160px;
+    min-height: 0;
+    max-height: 300px;
+    overflow: auto;
+    overflow-x: hidden;
+}
+
+.possible-groups-card h2,
+.seed-candidates-card h2 {
+    position: sticky;
+    top: -14px;
+    z-index: 3;
+    margin: -14px -14px 12px;
+    padding: 14px 14px 10px;
+    background: linear-gradient(180deg, #ffffff 0%, #ffffff 78%, rgba(255, 255, 255, 0.92) 100%);
+    border-bottom: 1px solid #e5ece9;
+    box-shadow: 0 6px 10px rgba(45, 64, 72, 0.04);
 }
 
 .btn {
@@ -195,10 +220,6 @@ body {
     background: #f7f9f8;
     border-color: #d6e0dd;
     color: #2b3b3f;
-}
-
-#seed-candidates-toggle-btn {
-    margin-top: 8px;
 }
 
 .btn-danger {
@@ -362,6 +383,53 @@ body {
     color: #304244;
     font-size: 13px;
     line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+.possible-groups-card {
+    max-height: 300px;
+    overflow: auto;
+    overflow-x: hidden;
+}
+
+.possible-groups-list {
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.possible-group-item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 9px;
+    align-items: start;
+    border-radius: 10px;
+    border: 1px solid #dce5e2;
+    border-left: 4px solid var(--group-color, #2b5cab);
+    background: #fcfefd;
+    padding: 8px 9px;
+}
+
+.possible-group-chip {
+    min-width: 32px;
+    border-radius: 999px;
+    background: var(--group-color, #2b5cab);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    padding: 4px 8px;
+}
+
+.possible-group-item p {
+    margin: 1px 0 0;
+    color: #304244;
+    font-size: 13px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
 }
 
 .toast {
@@ -592,5 +660,11 @@ body {
         position: static;
         max-height: none;
         overflow: visible;
+    }
+}
+
+@media (max-width: 760px) {
+    .preview-grid {
+        grid-template-columns: 1fr;
     }
 }
