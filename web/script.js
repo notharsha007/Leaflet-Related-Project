@@ -373,10 +373,40 @@ function renderPossibleGroups(groups, seeds) {
     }
 }
 
+function renderPreviewRadiusRings(groups, seeds) {
+    if (lastGroups.length > 0) {
+        return;
+    }
+
+    groupRingLayer.clearLayers();
+
+    if (!showRadiusRings || markers.length === 0) {
+        return;
+    }
+
+    for (let i = 0; i < seeds.length; i++) {
+        const seed = markers[seeds[i]];
+        if (!seed) {
+            continue;
+        }
+
+        L.circle(seed.marker.getLatLng(), {
+            radius: thresholdMeters,
+            color: "#1e7f74",
+            weight: 2,
+            fillColor: "#1e7f74",
+            fillOpacity: 0.04,
+            opacity: 0.78,
+            dashArray: "5 7"
+        }).addTo(groupRingLayer);
+    }
+}
+
 function renderLivePreview() {
     const result = markers.length > 0 ? buildGroups() : { groups: [], seeds: [] };
     renderPossibleGroups(result.groups, result.seeds);
     renderSeedCandidateDetails(result.groups, result.seeds);
+    renderPreviewRadiusRings(result.groups, result.seeds);
 }
 
 function updateMarkerGroupAssignments(groups) {
@@ -783,7 +813,7 @@ function toggleRadiusRings() {
     if (lastGroups.length > 0) {
         renderGroups(lastGroups, lastGroupSeeds);
     } else {
-        renderSelectedRing();
+        renderLivePreview();
     }
     setMapButtonStates();
     showToast(showRadiusRings ? "Radius rings shown" : "Radius rings hidden");
